@@ -10,9 +10,15 @@ def display_list(db, cfg):
 	return foo.getConfig()
 
 class VideoDisplay:
+	SERIES_ID='seriesID'
 	def __init__(self, db, cfg):
 		self.cfg = cfg
-		self.db = db
+		series = {}
+		for a in db:
+			if a[VideoDisplay.SERIES_ID] is not None and a[VideoDisplay.SERIES_ID] not in series.keys():
+				series[a[VideoDisplay.SERIES_ID]] = a.getSeries()
+		self.db = db.copy()
+		self.db.extend(series.values())
 		self.root = tk.Tk()
 		self.searchFrame = tk.Frame(self.root, background="#D9D9D9")
 		self.searchFrame.pack(side="top")
@@ -123,6 +129,8 @@ class VideoDisplay:
 			self.displaying = self.performSearch()
 		else:
 			self.displaying = [a for a in self.db]
+
+		# this is slow
 		self.displaying.sort(key=functools.cmp_to_key(self.videoCmp))
 
 		self.display_sort_column_heads(0)
@@ -146,11 +154,19 @@ class VideoDisplay:
 		return out
 
 	def videoCmp(self, a, b):
-		SERIES_ID='seriesID'
-		if a[SERIES_ID] != b[SERIES_ID]:
-			if a[SERIES_ID] is not None:
+		# always put series entries before the series values
+		# all the series stuff is a hack right now
+		if a[VideoDisplay.SERIES_ID] == b['imdbID']:
+			return 1
+		elif b[VideoDisplay.SERIES_ID] == a['imdbID']:
+			return -1
+
+		# put all items in a series together
+		# if we are not part of the same series (or both not part of the series) compare with series item
+		if a[VideoDisplay.SERIES_ID] != b[VideoDisplay.SERIES_ID]:
+			if a[VideoDisplay.SERIES_ID] is not None:
 				a = a.getSeries()
-			if b[SERIES_ID] is not None:
+			if b[VideoDisplay.SERIES_ID] is not None:
 				b = b.getSeries()
 
 		ak = no_none_get(a,self.sortKey,"N/A")

@@ -50,105 +50,25 @@ def getVideos(cfg):
 	return database
 
 def findDBs(top_folder):
-	to_fix = []
 	folder = expand_path(top_folder, os.path.abspath(os.sep))
 	for dirpath, subdirs, files in os.walk(folder):
 		if CONFIG_FILE in files:
 			yield path_join(folder, dirpath, CONFIG_FILE)
-		elif checkForVideo(files):
-			to_fix.append((dirpath, files))
-	if len(sys.argv) > 1:
-		for dirpath, files in to_fix:
-			out = makeConfig(folder, dirpath, files)
-			if out is not None:
-				yield out
-
-def makeConfig(folder, dirs, files):
-	files = list(files)
-	files.sort()
-	configs = []
-	for vf in getVideoFiles(files):
-		config = makeConfigPerVideo(dirs, files, vf, folder)
-		if len(config.keys()) > 0:
-			configs.append(config)
-	total_path = path_join(folder, dirs, CONFIG_FILE)
-	print('Saving value:', configs)
-	if len(configs) == 1:
-		with open(total_path, 'w') as f:
-			json.dump(configs[0], f, sort_keys=True, indent=4)
-	elif len(configs) > 1:
-		with open(total_path, 'w') as f:
-			json.dump(configs, f, sort_keys=True, indent=4)
-	else:
-		return
-	return total_path
-
-def makeConfigPerVideo(dirs, files, vf, folder):
-	if shutil.which('ffprobe') is None:
-		subprocess.call(['avprobe', path_join(folder, dirs, vf)])
-	elif shutil.which('ffprobe') is not None:
-		subprocess.call(['ffprobe', path_join(folder, dirs, vf)])
-	print("\n\nIn ", dirs, " working on ", vf)
-	print("Other files are: ", files)
-	config = {}
-	keys = list(parseVideos.keys)
-	keys.sort()
-	for key in keys:
-		yorn = readGlobString(files, key)
-		if len(yorn) > 0:
-			config[key] = yorn
-	return AddOrFixConfig(config, dirs, files, vf)
-
-def AddOrFixConfig(config, dirs, files, vf):
-	print("\nIn ", dirs, " working on ", vf)
-	print("Other files are: ", files)
-	print("\nConfig to save: ", config, '\n')
-	key = input('\nSpecify key to fix or additional key to add:')
-	while len(key) > 0:
-		yorn = readGlobString(files, key)
-		if len(yorn) > 0:
-			config[key] = yorn
-		elif key in config.keys():
-			del config[key]
-		print("Config to save: ", config)
-		key = input('\nSpecify key to fix or additional key to add:')
-	return config
-
-def readGlobString(files, key):
-	strs = input("\nGlob value for "+key+"?:")
-	matched = fnmatch.filter(files, strs)
-	while len(matched) > 1:
-		strs = input("Unable to disambiguate the match ("+str(matched)+"), please try again:")
-		matched = fnmatch.filter(files, strs)
-	if len(matched) == 0:
-		return strs
-	return matched[0]
-
-def checkForVideo(files):
-	try:
-		next(getVideoFiles(files))
-		return True
-	except StopIteration:
-		pass
-	return False
-
-def getVideoFiles(files):
-	for fil in files:
-		types, encodes = mimetypes.guess_type(fil, False)
-		if types is not None and 'video' in types:
-			yield fil
 
 def parseVideos(paths):
 	for a in jsonObjectParse(paths):
 		for key in a.keys():
 			parseVideos.keys.add(key)
 		vids = a.get('VideoFile', None)
+
+		# skip "video" with no file
 		if vids is None:
 			continue
 		if list(vids) == vids and any(not os.path.exists(expand_path(b, os.path.dirname(paths))) for b in vids):
 			continue
-		if list(vids) != vids and  not os.path.exists(expand_path(vids, os.path.dirname(paths))):
+		if list(vids) != vids and not os.path.exists(expand_path(vids, os.path.dirname(paths))):
 			continue
+
 		yield Video(a, os.path.dirname(paths))
 parseVideos.keys=set()
 
