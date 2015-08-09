@@ -287,7 +287,7 @@ def getAvailableColumns():
 	return Video.getAttrs()
 
 def fromSimpleListStr(sts):
-	return trimAll(sts.split(', '))
+	return trimAll(sts.split(','))
 
 def trimAll(lis):
 	out = []
