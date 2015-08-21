@@ -50,7 +50,7 @@ def makeConfig(folder, cfg):
 			if t is not None:
 				configs.append(t)
 	for iso in getIso(folder):
-		if question("Does "+str(iso)+" have a film on it that we have not done yet?"):
+		while question("Does "+str(iso)+" have a film on it that we have not done yet?"):
 			t = makeVideoConfig(iso, folder, cfg)
 			if t is not None:
 				configs.append(t)
@@ -212,6 +212,9 @@ def getStreams(files, folder):
 	for line in out.split(b"\n"):
 		lines = line.lstrip()
 		if lines.startswith(b'Stream'):
+			out = getStreamType(lines)
+			if out is None:
+				continue
 			yield getStreamType(lines)
 
 def getStreamType(lines):
@@ -222,6 +225,8 @@ def getStreamType(lines):
 			choices.append((lines.index(a),a))
 		except ValueError:
 			pass
+	if len(choices) == 0:
+		return
 	my_choice = min(choices)
 	return my_choice[1]
 
