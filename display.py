@@ -169,9 +169,15 @@ class VideoDisplay:
 			if b[VideoDisplay.SERIES_ID] is not None:
 				b = b.getSeries()
 
-		ak = no_none_get(a,self.sortKey,"N/A")
-		bk = no_none_get(b,self.sortKey,"N/A")
+		ak,bk = possiblyToIntTuples(no_none_get(a,self.sortKey,"N/A"),
+				no_none_get(b,self.sortKey,"N/A"))
 		if ak==bk:
+			at = no_none_get(a,'Title',"N/A")
+			bt = no_none_get(b, 'Title',"N/A")
+			if at > bt:
+				return 1
+			elif at < bt:
+				return -1
 			return 0
 		if ak > bk:
 			return self.sortDir
@@ -326,6 +332,32 @@ def parseSearch(strs):
 				general = general + ' ' + a
 	return general, data
 
+def all_same(a):
+	tmp = None
+	for b in a:
+		if tmp is None:
+			tmp = b
+		if tmp != b:
+			return False
+	return True
+
+def possiblyToIntTuples(*args):
+	out = []
+	if all_same(len(a.split()) for a in args):
+		t = list(a.split() for a in args)
+		for lines in zip(*t):
+			out.append(possiblyToInt(*lines))
+		return zip(*out)
+	return args
+
+def possiblyToInt(*args):
+	try:
+		out = []
+		for a in args:
+			out.append(int(a))
+		return out
+	except ValueError:
+		return args
 
 def no_none_get(a, b, c):
 	tmp = a[b]
