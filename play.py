@@ -6,6 +6,8 @@ import shlex
 
 def vlc_play(vid):
 	print(vid)
+	if vid['VideoFile'] is None:
+		return
 	cmd = shutil.which('vlc') + ' --fullscreen --play-and-exit'
 	if list(vid['VideoFile']) != vid['VideoFile']:
 		vids = [vid['VideoFile']]

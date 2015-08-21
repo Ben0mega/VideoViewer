@@ -35,6 +35,9 @@ class Video:
 		assert(series is not None)
 		return Video({'imdbID': series}, self.folder)
 
+	def hasSeries(self):
+		return  'seriesID' in self.attrs.keys()
+
 	def getAdvancedAttrs(self):
 		cache_file = self._getCacheFile()
 		if not path_exists(self._getCacheFolder()):
@@ -66,6 +69,8 @@ class Video:
 	def __getitem__(self, arg):
 		if arg in Video.PATH_ATTRS:
 			if arg not in self.attrs.keys():
+				if self.hasSeries():
+					return self.getSeries()[arg]
 				return None
 			stuff = self.attrs[arg]
 			# can have multiple files for Videos
@@ -76,7 +81,10 @@ class Video:
 					data.append(expand_path(a, self.folder))
 				return data
 			return expand_path(self.attrs[arg], self.folder)
-		return self.attrs.get(arg, None)
+		tmp = self.attrs.get(arg,None)
+		if tmp is None and self.hasSeries():
+			return self.getSeries()[arg]
+		return tmp
 
 	@classmethod
 	def addAttrs(cls, attrs):
