@@ -205,7 +205,8 @@ def getStreams(files, folder):
 	except subprocess.CalledProcessError:
 		if files[-4:] == '.iso':
 			# I assume all isos have subtitles - vlc handles it gracefully
-			return [b'Video', b'Subtitle']
+			for a in [b'Video', b'Subtitle']:
+				yield a
 		return
 
 	outlist = []
