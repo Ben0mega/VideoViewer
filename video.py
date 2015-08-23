@@ -3,6 +3,7 @@ from path_utils import expand_path
 from os.path import join as path_join
 from os.path import exists as path_exists
 from os.path import relpath
+from PIL import Image, ImageTk
 import os
 import urllib.request
 import json
@@ -20,6 +21,8 @@ class Video:
 		self.folder = folder
 		self.imdbID=self.attrs['imdbID']
 		self.getAdvancedAttrs()
+		self.series = None
+		self.images = {}
 
 	def _getCacheFolder(self):
 		return path_join(self.folder, Video.CACHE_FOLDER_NAME)
@@ -31,12 +34,23 @@ class Video:
 		return path_join(self._getCacheFolder(), self.imdbID+'.'+Video.CACHE_POSTER_NAME)
 
 	def getSeries(self):
-		series = self['seriesID']
-		assert(series is not None)
-		return Video({'imdbID': series}, self.folder)
+		if self.series is None and self.hasSeries():
+			series = self['seriesID']
+			self.series = Video({'imdbID': series}, self.folder)
+		return self.series
 
 	def hasSeries(self):
 		return  'seriesID' in self.attrs.keys()
+
+	def getId(self):
+		return self['imdbID']
+
+	def getPosterOfSize(self, x, y):
+		if (x,y) not in self.images.keys():
+			image = Image.open(self['PosterFile']).resize((x, y), Image.ANTIALIAS)
+			photo = ImageTk.PhotoImage(image)
+			self.images[(x,y)] = photo
+		return self.images[(x,y)]
 
 	def getAdvancedAttrs(self):
 		cache_file = self._getCacheFile()

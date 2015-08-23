@@ -121,6 +121,7 @@ class VideoDisplay:
 		self.searchEntry.delete(0, 'end')
 		self.refresh()
 
+	#@profile
 	def refresh(self):
 		self.clear()
 		self.canvas.yview_moveto(0)
@@ -131,13 +132,35 @@ class VideoDisplay:
 			self.displaying = [a for a in self.db]
 
 		# this is slow
-		self.displaying.sort(key=functools.cmp_to_key(self.videoCmp))
+		self.sortDisplaying()
 
 		self.display_sort_column_heads(0)
 		ro=1
 		for line in self.displaying:
 			self.display_video(line,  ro)
 			ro+=1
+
+	def sortDisplaying(self):
+		toSortTotal = []
+		toSortSeries = {}
+		for a in self.displaying:
+			if a.hasSeries():
+				s = a.getSeries()
+				if s.getId() not in toSortSeries.keys():
+					toSortSeries[s.getId()] = []
+				toSortSeries[s.getId()].append(a)
+			else:
+				toSortTotal.append(a)
+		toSortTotal.sort(key=functools.cmp_to_key(self.videoCmp))
+
+		self.displaying = []
+		for a in toSortTotal:
+			self.displaying.append(a)
+			if a.getId() in toSortSeries.keys():
+				toSortSeries[a.getId()].sort(key=functools.cmp_to_key(self.videoCmp))
+				self.displaying.extend(toSortSeries[a.getId()])
+
+		#self.displaying.sort(key=functools.cmp_to_key(self.videoCmp))
 
 	def performSearch(self):
 		out = []
@@ -153,6 +176,7 @@ class VideoDisplay:
 					break
 		return out
 
+	#@profile
 	def videoCmp(self, a, b):
 		# always put series entries before the series values
 		# all the series stuff is a hack right now
@@ -205,15 +229,19 @@ class VideoDisplay:
 			self.sortDir = 1
 		self.refresh()
 
+	#@profile
 	def display_video(self, line, ro):
 		col = 0
 		playerfn = make_play(line, self.cfg, self)
+		frF = self.frame
+		lbO = tk.Label
+		frO = tk.Frame
+
 		for column in self.cfg['columns']:
 			tmp = no_none_get(line, column, "N/A")
 			if tmp != "N/A" and column == "PosterFile":
-				image = Image.open(tmp).resize((100, 150), Image.ANTIALIAS)
-				photo = ImageTk.PhotoImage(image)
-				lb = tk.Label(self.frame, image=photo, height=150, width=100, borderwidth="1", relief="solid",
+				photo = line.getPosterOfSize(100,150)
+				lb = lbO(frF, image=photo, height=150, width=100, borderwidth="1", relief="solid",
 					anchor=tk.NW, justify=tk.CENTER,
 					)
 				lb.image = photo
@@ -228,9 +256,9 @@ class VideoDisplay:
 					width = 320
 				if len(tmp) > 450:
 					tmp = tmp[:450]+"..."
-				f = tk.Frame(self.frame, height=150, width=width)
+				f = frO(frF, height=150, width=width)
 				f.pack_propagate(0)
-				lbf = tk.Label(f, text=tmp, borderwidth="1", relief="solid",
+				lbf = lbO(f, text=tmp, borderwidth="1", relief="solid",
 					anchor=tk.N, justify=tk.LEFT, wraplength=300,
 					bg=background
 					)
@@ -333,14 +361,13 @@ def parseSearch(strs):
 	return general, data
 
 def all_same(a):
-	tmp = None
+	tmp = next(a)
 	for b in a:
-		if tmp is None:
-			tmp = b
 		if tmp != b:
 			return False
 	return True
 
+#@profile
 def possiblyToIntTuples(*args):
 	out = []
 	if all_same(len(a.split()) for a in args):
@@ -350,6 +377,7 @@ def possiblyToIntTuples(*args):
 		return zip(*out)
 	return args
 
+#@profile
 def possiblyToInt(*args):
 	try:
 		out = []
